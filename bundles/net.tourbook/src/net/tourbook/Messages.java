@@ -1698,8 +1698,11 @@ public class Messages extends NLS {
 
    public static String        pref_tour_editor_description_height;
    public static String        pref_tour_editor_description_height_tooltip;
+   public static String        pref_tour_editor_group_timezone_format;
    public static String        pref_tour_editor_dlg_desc_height_message;
    public static String        pref_tour_editor_dlg_desc_height_title;
+   public static String        pref_tour_editor_dlg_desc_timezone_format_title;
+   public static String        pref_tour_editor_dlg_desc_timezone_format_message;
 
    public static String        pref_tourtag_btn_new_tag;
    public static String        pref_tourtag_btn_new_tag_category;
@@ -2176,6 +2179,9 @@ public class Messages extends NLS {
 
    public static String Slideout_TourEditor_Label_LatLonDigits;
    public static String Slideout_TourEditor_Label_LatLonDigits_Tooltip;
+   public static String Slideout_TourEditor_Label_Show;
+   public static String Slideout_TourEditor_Label_TourEditorOptions;
+   
    public static String Slideout_TourFilter_Action_ActivateAll;
    public static String Slideout_TourFilter_Action_ActivateAll_Tooltip;
    public static String Slideout_TourFilter_Action_AddProfile;

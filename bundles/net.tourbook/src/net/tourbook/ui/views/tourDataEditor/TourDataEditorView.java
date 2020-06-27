@@ -567,6 +567,11 @@ public class TourDataEditorView extends ViewPart implements ISaveablePart, ISave
    private Section                  _sectionPersonal;
    private Section                  _sectionWeather;
    private Section                  _sectionCharacteristics;
+   
+   /**
+    * contains a list of sections that can be suppressed by SlideoutViewSetting buttons 
+    */
+   private ArrayList<Section>		_suppressibleSectionList = new ArrayList<Section>();
    //
    private Label                    _timeSlice_Label;
    private TableViewer              _timeSlice_Viewer;
@@ -3153,7 +3158,7 @@ public class TourDataEditorView extends ViewPart implements ISaveablePart, ISave
                                  final String title,
                                  final boolean isGrabVertical,
                                  final boolean isExpandable) {
-
+	  Boolean isVisible;	  
       final int style = isExpandable ? //
             Section.TWISTIE //
                   | Section.TITLE_BAR
@@ -3161,7 +3166,7 @@ public class TourDataEditorView extends ViewPart implements ISaveablePart, ISave
 
       final Section section = tk.createSection(parent, style);
 
-      section.setText(title);
+      section.setText(title.trim());
       GridDataFactory.fillDefaults().grab(true, isGrabVertical).applyTo(section);
 
       final Composite sectionContainer = tk.createComposite(section);
@@ -3174,6 +3179,9 @@ public class TourDataEditorView extends ViewPart implements ISaveablePart, ISave
          }
       });
 
+      isVisible = Util.getStateBoolean(_state, title.trim(), true);
+		
+      setSectionVisible(section, isVisible);
       return section;
    }
 
@@ -3227,6 +3235,8 @@ public class TourDataEditorView extends ViewPart implements ISaveablePart, ISave
    private void createUI_Section_110_Title(final Composite parent) {
 
       _sectionTitle = createSection(parent, _tk, Messages.tour_editor_section_tour, true, true);
+      _suppressibleSectionList.add(_sectionTitle);
+      
       final Composite container = (Composite) _sectionTitle.getClient();
       GridLayoutFactory.fillDefaults().numColumns(2).applyTo(container);
       {
@@ -3248,7 +3258,7 @@ public class TourDataEditorView extends ViewPart implements ISaveablePart, ISave
                   .hint(_hintTextColumnWidth, SWT.DEFAULT)
                   .applyTo(_comboTitle);
 
-            _comboTitle.addKeyListener(_keyListener);
+            // _comboTitle.addKeyListener(_keyListener);
             _comboTitle.addModifyListener(new ModifyListener() {
 
                @Override
@@ -3380,7 +3390,7 @@ public class TourDataEditorView extends ViewPart implements ISaveablePart, ISave
    private void createUI_Section_120_DateTime(final Composite parent) {
 
       _sectionDateTime = createSection(parent, _tk, Messages.tour_editor_section_date_time, false, true);
-
+      _suppressibleSectionList.add(_sectionDateTime);
       final Composite container = (Composite) _sectionDateTime.getClient();
       GridLayoutFactory
             .fillDefaults()//
@@ -3666,8 +3676,10 @@ public class TourDataEditorView extends ViewPart implements ISaveablePart, ISave
             _tk.adapt(_comboTimeZone, true, false);
 
             // fill combobox
-            for (final TimeZoneData timeZone : TimeTools.getAllTimeZones()) {
-               _comboTimeZone.add(timeZone.label);
+            boolean shortTimezoneFormat = _prefStore.getBoolean(ITourbookPreferences.TOUR_EDITOR_TIMEZONE_SHORT_FORMAT);
+            
+            for (final TimeZoneData timeZone : TimeTools.getAllTimeZones()) {            
+               _comboTimeZone.add(shortTimezoneFormat ? timeZone.zoneId : timeZone.label);
             }
 
             /*
@@ -3753,6 +3765,8 @@ public class TourDataEditorView extends ViewPart implements ISaveablePart, ISave
    private void createUI_Section_130_Personal(final Composite parent) {
 
       _sectionPersonal = createSection(parent, _tk, Messages.tour_editor_section_personal, false, true);
+      _suppressibleSectionList.add(_sectionPersonal);
+      
       final Composite container = (Composite) _sectionPersonal.getClient();
       GridLayoutFactory
             .fillDefaults()//
@@ -3882,7 +3896,8 @@ public class TourDataEditorView extends ViewPart implements ISaveablePart, ISave
             _spinPerson_FTP.setMaximum(10000);
 
             _spinPerson_FTP.addMouseWheelListener(_mouseWheelListener);
-
+            _spinPerson_FTP.addSelectionListener(_selectionListener);
+            
             // spacer
             _tk.createLabel(container, UI.EMPTY_STRING);
          }
@@ -3892,6 +3907,8 @@ public class TourDataEditorView extends ViewPart implements ISaveablePart, ISave
    private void createUI_Section_140_Weather(final Composite parent) {
 
       _sectionWeather = createSection(parent, _tk, Messages.tour_editor_section_weather, false, true);
+      _suppressibleSectionList.add(_sectionWeather);
+      
       final Composite container = (Composite) _sectionWeather.getClient();
       GridDataFactory.fillDefaults().grab(true, false).applyTo(container);
       GridLayoutFactory.fillDefaults()
@@ -4443,6 +4460,7 @@ public class TourDataEditorView extends ViewPart implements ISaveablePart, ISave
    private void createUI_Section_150_Characteristics(final Composite parent) {
 
       _sectionCharacteristics = createSection(parent, _tk, Messages.tour_editor_section_characteristics, false, true);
+      _suppressibleSectionList.add(_sectionCharacteristics);
       final Composite container = (Composite) _sectionCharacteristics.getClient();
       GridLayoutFactory.fillDefaults().numColumns(4).applyTo(container);
 //    container.setBackground(Display.getCurrent().getSystemColor(SWT.COLOR_GREEN));
@@ -4576,9 +4594,10 @@ public class TourDataEditorView extends ViewPart implements ISaveablePart, ISave
       // with e4 the layouts are not yet set -> NPE's -> run async which worked
       parent.getShell().getDisplay().asyncExec(() -> {
 
-         // compute width for all controls and equalize column width for the different sections
-         _tab1Container.layout(true, true);
+         // compute width for all controls and equalize column width for the different sections    	      	  
+    	  _tab1Container.layout(true, true);    	  
          UI.setEqualizeColumWidths(_firstColumnControls);
+         _tab1Container.layout(true, true);
          UI.setEqualizeColumWidths(_secondColumnControls);
 
          _tab1Container.layout(true, true);
@@ -6556,6 +6575,10 @@ public class TourDataEditorView extends ViewPart implements ISaveablePart, ISave
       }
    }
 
+   public ArrayList<Section> get_suppressibleSectionList() {
+		return _suppressibleSectionList;
+   }
+   
    private void getDataSeriesFromTourData() {
 
       _serieTime = _tourData.timeSerie;
@@ -8185,7 +8208,7 @@ public class TourDataEditorView extends ViewPart implements ISaveablePart, ISave
              * rounding errors
              */
 
-            _tourData.setWeatherWindSpeed((int) (_spinWeather_Wind_SpeedValue.getSelection() * _unitValueDistance));
+            _tourData.setWeatherWindSpeed(Math.round((_spinWeather_Wind_SpeedValue.getSelection() * _unitValueDistance)));
          }
 
          final int cloudIndex = _comboWeather_Clouds.getSelectionIndex();
@@ -8588,6 +8611,18 @@ public class TourDataEditorView extends ViewPart implements ISaveablePart, ISave
       table.setSortDirection(direction);
    }
 
+   public void updateUI_Prefs(Button b) {	   
+	   Section s = (Section) b.getData();
+	   
+	   setSectionVisible(s, b.getSelection());   	  
+	   s.getClient().getParent().getParent().layout();	   	   	
+   }
+   
+   private void setSectionVisible(Section s, boolean visible) {	
+	   s.setVisible(visible);
+	   ((GridData)s.getLayoutData()).exclude = ! visible;
+   }
+
    private void updateUI_Tab_1_Tour() {
 
       /*
@@ -8623,7 +8658,7 @@ public class TourDataEditorView extends ViewPart implements ISaveablePart, ISave
 
       // wind speed
       final int windSpeed = _tourData.getWeatherWindSpeed();
-      final int speed = (int) (windSpeed / _unitValueDistance);
+      final int speed = Math.round(windSpeed / _unitValueDistance);
       _spinWeather_Wind_SpeedValue.setSelection(speed);
       _comboWeather_WindSpeedText.select(getWindSpeedTextIndex(speed));
 
