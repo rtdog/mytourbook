@@ -74,7 +74,7 @@ public class DataProvider_HrZone_Week extends DataProvider {
 
          final int maxZones = 10; // hr zones: 0...9
          int numberOfWeeks = 0;
-         for (final int weeks : _yearWeeks) {
+         for (final int weeks : allYearWeeks) {
             numberOfWeeks += weeks;
          }
 
@@ -186,7 +186,7 @@ public class DataProvider_HrZone_Week extends DataProvider {
                int allWeeks = 0;
                for (int yearIndex = 0; yearIndex <= dbYearIndex; yearIndex++) {
                   if (yearIndex > 0) {
-                     allWeeks += _yearWeeks[yearIndex - 1];
+                     allWeeks += allYearWeeks[yearIndex - 1];
                   }
                }
 
@@ -207,9 +207,9 @@ public class DataProvider_HrZone_Week extends DataProvider {
 
          _weekData.hrZoneValues = dbHrZoneValues;
 
-         _weekData.years = _years;
-         _weekData.yearWeeks = _yearWeeks;
-         _weekData.yearDays = _yearDays;
+         _weekData.years = allYearNumbers;
+         _weekData.yearWeeks = allYearWeeks;
+         _weekData.yearDays = allYearDays;
 
       } catch (final SQLException e) {
          UI.showSQLException(e);
@@ -305,7 +305,10 @@ public class DataProvider_HrZone_Week extends DataProvider {
 
       int yearIndex = 0;
       int prevSumWeeks = 0;
-      int sumYearWeeks = _yearWeeks[yearIndex];
+      int sumYearWeeks = allYearWeeks[yearIndex];
+
+      // setup previous year
+      int prevYear = allYearNumbers[0];
 
       for (int weekIndex = 0; weekIndex < numWeeks; weekIndex++) {
 
@@ -317,17 +320,15 @@ public class DataProvider_HrZone_Week extends DataProvider {
 
             // advance to the next year
 
-//            System.out.println();
-
             yearIndex++;
 
-            final int yearWeeks = _yearWeeks[yearIndex];
+            final int yearWeeks = allYearWeeks[yearIndex];
 
             prevSumWeeks = sumYearWeeks;
             sumYearWeeks += yearWeeks;
          }
 
-         final int year = _years[yearIndex];
+         final int year = allYearNumbers[yearIndex];
          final int week = weekIndex - prevSumWeeks;
 
          int sumSeconds = 0;
@@ -336,6 +337,12 @@ public class DataProvider_HrZone_Week extends DataProvider {
          }
 
          final String sumHHMMSS = net.tourbook.common.UI.format_hhh_mm_ss(sumSeconds);
+
+         // group by year
+         if (year != prevYear) {
+            prevYear = year;
+            sb.append(NL);
+         }
 
          sb.append(String.format(valueFormatting,
 
